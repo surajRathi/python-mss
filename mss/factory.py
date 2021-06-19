@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from .exception import ScreenShotError
 
-
 if TYPE_CHECKING:
     from typing import Any  # noqa
 
@@ -36,9 +35,15 @@ def mss(**kwargs):
         return darwin.MSS(**kwargs)
 
     if os_ == "linux":
-        from . import linux
+        from os import environ
+        if 'wayland' in environ.get('WAYLAND_DISPLAY', ''):
+            from . import linux_wayland
+            return linux_wayland.MSS(**kwargs)
+        if ':' in environ.get('DISPLAY', ''):
+            from . import linux
+            return linux.MSS(**kwargs)
 
-        return linux.MSS(**kwargs)
+        raise ScreenShotError('Could not detect the display server, is DISPLAY or WAYLAND_DISPLAY set?')
 
     if os_ == "windows":
         from . import windows
