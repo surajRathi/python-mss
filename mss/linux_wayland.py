@@ -7,7 +7,7 @@ import dataclasses
 from random import random
 from typing import TYPE_CHECKING
 
-import cv2
+from PIL import Image
 from gi.repository import GLib
 from pydbus import SessionBus, Variant
 
@@ -86,10 +86,12 @@ class MSS(MSSBase):
 
         if resp.code == 0:
             if resp.uri.startswith('file:///'):
-                arr = cv2.imread(resp.uri[len('file://'):])
-                arr = cv2.cvtColor(arr, cv2.COLOR_BGR2BGRA)
-                mon = {"left": 0, "top": 0, "width": arr.shape[1], "height": arr.shape[0]}
-                return self.cls_image(arr.tobytes(), mon)
+                im = Image.open(resp.uri[len('file://'):])
+                R, G, B = im.split()
+                im = Image.merge("RGB", (B, G, R))
+                im.putalpha(256)
+                mon = {"left": 0, "top": 0, "width": im.width, "height": im.height}
+                return self.cls_image(im.tobytes(), mon)
             raise ScreenShotError(f"Cannot open URI {resp.uri}")
 
         raise ScreenShotError(
